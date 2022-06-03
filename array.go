@@ -58,7 +58,7 @@ func (array *Array[T]) Filter(filterHandler func(value T) bool) (newArray Array[
 	return newArray
 }
 
-// La méthode FilterInternal est similaire à la fonction Filter sauf qu'elle modifie directement le tableau d'origine
+// La méthode FilterInternal est similaire à la fonction Filter sauf qu'elle modifie directement le tableau d'origine au lieu de renvoyer un nouveau tableau
 func (array *Array[T]) FilterInternal(filterHandler func(value T) bool) {
 	var newArray Array[T]
 	for _, a := range *array {
@@ -67,4 +67,14 @@ func (array *Array[T]) FilterInternal(filterHandler func(value T) bool) {
 		}
 	}
 	*array = newArray
+}
+
+// La méthode findIndex() renvoie l'indice du premier élément du tableau qui satisfait une condition donnée par une fonction. Si la fonction renvoie faux pour tous les éléments du tableau, le résultat vaut -1.
+func (array *Array[T]) FindIndex(findHandler func(value T) bool) int {
+	for idx, v := range *array {
+		if findHandler(v) {
+			return idx
+		}
+	}
+	return -1
 }

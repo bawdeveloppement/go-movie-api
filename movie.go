@@ -8,7 +8,7 @@ import (
 
 type MovieRouter struct{}
 
-func (movieRouter *MovieRouter) Handle(w http.ResponseWriter, r *http.Request) {
+func (movieRouter *MovieRouter) CreateRouter(w http.ResponseWriter, r *http.Request) {
 	var head string
 	head, r.URL.Path = ShiftPath(r.URL.Path)
 	fmt.Println(head)
@@ -32,9 +32,9 @@ func (movieRouter *MovieRouter) Handle(w http.ResponseWriter, r *http.Request) {
 			case "GET":
 				movieRouter.getSingleMovieHandler(head).ServeHTTP(w, r)
 			case "PUT":
-				movieRouter.updateMovieHandler().ServeHTTP(w, r)
+				movieRouter.updateMovieHandler(head).ServeHTTP(w, r)
 			case "DELETE":
-				movieRouter.deleteMovieHandler().ServeHTTP(w, r)
+				movieRouter.deleteMovieHandler(head).ServeHTTP(w, r)
 			default:
 				http.Error(w, "Not Found", http.StatusNotFound)
 			}
@@ -67,19 +67,56 @@ func (movieRouter *MovieRouter) getSingleMovieHandler(id string) http.Handler {
 
 func (movieRouter *MovieRouter) createMovieHandler() http.Handler {
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-
+		var movie Movie
+		err := json.NewDecoder(req.Body).Decode(&movie)
+		if err != nil {
+			http.Error(res, "Cannot create a movie", http.StatusBadRequest)
+		} else {
+			if len(movies.Filter(func(value Movie) bool {
+				return value.Id == movie.Id
+			})) > 0 {
+				http.Error(res, "Movie with same id already exist", http.StatusConflict)
+			} else {
+				movies.ConcatValues(movie)
+				json.NewEncoder(res).Encode(movies)
+			}
+		}
 	})
 }
 
-func (movieRouter *MovieRouter) updateMovieHandler() http.Handler {
+func (movieRouter *MovieRouter) updateMovieHandler(id string) http.Handler {
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-
+		foundIndex := movies.FindIndex(func(value Movie) bool {
+			return value.Id == id
+		})
+		if foundIndex != -1 {
+			var movie Movie
+			err := json.NewDecoder(req.Body).Decode(&movie)
+			if err != nil {
+				http.Error(res, "Movie with same id already exist", http.StatusNotFound)
+			} else {
+				movies[foundIndex] = movie
+				json.NewEncoder(res).Encode(movies)
+			}
+		} else {
+			http.Error(res, "Movie with same id already exist", http.StatusNotFound)
+		}
 	})
 }
 
-func (movieRouter *MovieRouter) deleteMovieHandler() http.Handler {
+// Supprime un film du tableau de film movies à partir du parametre id de l'url
+func (movieRouter *MovieRouter) deleteMovieHandler(id string) http.Handler {
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-
+		if len(movies.Filter(func(value Movie) bool {
+			return value.Id == id
+		})) > 0 {
+			movies.FilterInternal(func(value Movie) bool {
+				return value.Id != id
+			})
+			json.NewEncoder(res).Encode(movies)
+		} else {
+			http.Error(res, "Movie with same id already exist", http.StatusNotFound)
+		}
 	})
 }
 
@@ -87,7 +124,6 @@ func (movieRouter *MovieRouter) deleteMovieHandler() http.Handler {
 
 type Movie struct {
 	Id       string    `json:"id"`
-	Isbn     string    `json:"isbn"`
 	Title    string    `json:"title"`
 	Director *Director `json:"director"`
 }

@@ -8,7 +8,7 @@ import (
 
 type UserRouter struct{}
 
-func (userRouter *UserRouter) Handle(w http.ResponseWriter, r *http.Request) {
+func (userRouter *UserRouter) CreateRouter(w http.ResponseWriter, r *http.Request) {
 	var head string
 	head, r.URL.Path = ShiftPath(r.URL.Path)
 	id, err := strconv.Atoi(head)
@@ -52,7 +52,8 @@ func (h *UserRouter) UserProfileHandler(id int) http.Handler {
 // ----- Types -----
 
 type User struct {
-	Email string `required max:"100"`
+	Email    string `required max:"100"`
+	Password string
 }
 
 func (user *User) changeEmailAdress(email string) bool {

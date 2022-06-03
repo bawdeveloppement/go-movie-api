@@ -3,12 +3,14 @@ package main
 import (
 	"log"
 	"net/http"
-
 	"path"
 	"strings"
 )
 
 var (
+	// Array est un tableau générique
+	// Voir le fichier array.go pour plus de détail sur les méthodes
+	auths Array[Auth] = Array[Auth]{}
 	users Array[User] = Array[User]{
 		{Email: "baw.developpement@gmail.com"},
 	}
@@ -22,31 +24,35 @@ var (
 	}
 )
 
+type Application struct {
+	AuthRouter  *AuthRouter
+	UserRouter  *UserRouter
+	MovieRouter *MovieRouter
+}
+
 func main() {
 	application := &Application{
+		AuthRouter:  new(AuthRouter),
 		UserRouter:  new(UserRouter),
 		MovieRouter: new(MovieRouter),
 	}
 	log.Fatal(http.ListenAndServe(":3333", application))
 }
 
-type Application struct {
-	UserRouter  *UserRouter
-	MovieRouter *MovieRouter
-}
-
 // Application Router
-func (application *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (application *Application) ServeHTTP(req http.ResponseWriter, res *http.Request) {
 	var head string
-	head, r.URL.Path = ShiftPath(r.URL.Path)
+	head, res.URL.Path = ShiftPath(res.URL.Path)
 
 	switch head {
+	case "auth":
+		application.AuthRouter.CreateRouter(req, res)
 	case "user":
-		application.UserRouter.Handle(w, r)
+		application.UserRouter.CreateRouter(req, res)
 	case "movies":
-		application.MovieRouter.Handle(w, r)
+		application.MovieRouter.CreateRouter(req, res)
 	default:
-		http.Error(w, "Not Found", http.StatusNotFound)
+		http.Error(req, "Not Found", http.StatusNotFound)
 	}
 }
 
