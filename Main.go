@@ -1,10 +1,14 @@
 package main
 
 import (
+	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 	"path"
 	"strings"
+
+	"github.com/lib/pq"
 )
 
 var (
@@ -30,13 +34,53 @@ type Application struct {
 	MovieRouter *MovieRouter
 }
 
+func createMovieInDb(db *sql.DB, movie Movie) {
+	result, err := db.Exec(
+		"INSERT INTO movies (id, title) VALUES ($1, $2)",
+		movie.Id,
+		movie.Title,
+	)
+
+	if err != nil {
+		log.Fatal("error", err)
+	}
+	fmt.Println(&result)
+}
+
+func findAllMovie(db *sql.DB) {
+
+}
+
 func main() {
+	connStr := "postgresql://postgres:root@127.0.0.1/movie-app?sslmode=disable"
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(pq.Einfo)
+	rows, err := db.Query("SELECT * FROM movies")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	if err != nil {
+		log.Fatalln(err) /*  */
+	}
+	var res string
+	for rows.Next() {
+		rows.Scan(&res)
+		fmt.Println(res)
+		// movies.ConcatValues(res)
+	}
+	fmt.Println(movies)
+
 	application := &Application{
 		AuthRouter:  new(AuthRouter),
 		UserRouter:  new(UserRouter),
 		MovieRouter: new(MovieRouter),
 	}
 	log.Fatal(http.ListenAndServe(":3333", application))
+
 }
 
 // Application Router
